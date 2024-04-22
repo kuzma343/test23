@@ -10,13 +10,16 @@ pipeline {
     stages {
         
         
-        stage("Docker login"){
-      steps{
-      withCredentials([string(credentialsId: 'DockerHubPwd', variable: 'dockerpwd')]) {
-      sh "docker login -u username -p ${dockerpwd}"
+       stage('Вхід у Docker') {
+            steps {
+                script {
+                    // Використовуємо креденшіали з Jenkins для входу в Docker
+                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh 'echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin'
+                    }
+                }
             }
         }
-   }
 
         stage('Білд Docker зображення') {
             steps {
