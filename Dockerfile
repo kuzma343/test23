@@ -5,11 +5,11 @@ RUN apt-get update && \
 # Install yarn as an alternative package manager for react-scripts
 RUN npm install -g yarn
 
-# Clone the cloud repository
-COPY cloud /app/cloud
+COPY cloud/BackEnd /app/BackEnd
+COPY cloud/FrontEnd /app/FrontEnd
 
 # Change to the FrontEnd/my-app directory
-WORKDIR /app/cloud/FrontEnd/my-app
+WORKDIR /app/FrontEnd/my-app
 
 # Install react-scripts as a development dependency
 RUN yarn add --dev react-scripts
