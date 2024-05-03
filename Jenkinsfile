@@ -2,19 +2,16 @@ pipeline {
     agent any
 
     environment {
-        // Додаємо креденшіали для Docker
+        // Креденшіали для Docker
         DOCKER_CREDENTIALS_ID = 'dockerHub'
-        CONTAINER_NAME = 'kuzma343_test23'
+        COMPOSE_FILE = 'docker-compose.yml' // Назва файлу Docker Compose
     }
-   
 
     stages {
-        
-        
-       stage('Вхід у Docker') {
+        stage('Вхід у Docker') {
             steps {
                 script {
-                    // Використовуємо креденшіали з Jenkins для входу в Docker
+                    // Використання креденшіалів з Jenkins для входу в Docker
                     withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                         sh 'echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin'
                     }
@@ -22,67 +19,30 @@ pipeline {
             }
         }
 
-        stage('Білд Docker зображення') {
+        stage('Білд і пуш Docker зображень') {
             steps {
                 script {
-                    // Будуємо Docker зображення
-                    sh 'docker build -t kuzma343/test23:version${BUILD_NUMBER} .'
+                    // Білдимо і пушимо образи через Docker Compose
+                    sh 'docker-compose -f ${COMPOSE_FILE} build'
+                    sh 'docker-compose -f ${COMPOSE_FILE} push'
                 }
             }
         }
 
-          stage('Тегування Docker зображення') {
+        stage('Запуск Docker контейнерів') {
             steps {
                 script {
-                    // Додаємо тег 'latest' до збудованого образу
-                    sh 'docker tag kuzma343/test23:version${BUILD_NUMBER} kuzma343/test23:latest'
+                    // Використовуємо Docker Compose для запуску контейнерів
+                    sh 'docker-compose -f ${COMPOSE_FILE} up -d'
                 }
             }
         }
 
-        stage('Пуш у Docker Hub') {
+        stage('Чистка') {
             steps {
                 script {
-                    // Пушимо зображення на Docker Hub
-                    sh 'docker push kuzma343/test23:version${BUILD_NUMBER}'
-                    sh 'docker push kuzma343/test23:latest'
-                }
-            }
-        }
-
-        stage('Зупинка та видалення старого контейнера') {
-            steps {
-                script {
-                    // Спроба зупинити та видалити старий контейнер, якщо він існує
-                    sh """
-                    if [ \$(docker ps -aq -f name=^${CONTAINER_NAME}\$) ]; then
-                        docker stop ${CONTAINER_NAME}
-                        docker rm ${CONTAINER_NAME}
-                    else
-                        echo "Контейнер ${CONTAINER_NAME} не знайдено. Продовжуємо..."
-                    fi
-                    """
-                }
-            }
-        }
-
-             stage('Чистка старих образів') {
-            steps {
-                script {
-                    // Пушимо зображення на Docker Hub
-                    sh 'docker image prune -a --filter "until=24h" --force'
-
-                }
-            }
-        }
-        
-        
-        stage('Запуск Docker контейнера') {
-            steps {
-                script {
-                    // Запускаємо Docker контейнер з новим зображенням
-                    sh 'docker run -d -p 8081:80 --name ${CONTAINER_NAME} --health-cmd="curl --fail http://localhost:80 || exit 1" kuzma343/test23:version${BUILD_NUMBER}'
-
+                    // Видаляємо неактивні контейнери і невикористовувані образи
+                    sh 'docker system prune -af'
                 }
             }
         }
