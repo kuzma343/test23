@@ -13,14 +13,10 @@ services:
 
   backend:
     build:
-      context: ./BackEnd
+      context: ./BackEnd/Amazon-clone
       dockerfile: Dockerfile.backend
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./BackEnd:/app
-
-volumes:
-  frontend-data:
-  backend-data:
+      - ./BackEnd/Amazon-clone:/app
