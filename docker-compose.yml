@@ -1,0 +1,26 @@
+version: '3.7'
+
+services:
+  frontend:
+    build:
+      context: ./FrontEnd
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./FrontEnd:/app/FrontEnd
+    working_dir: /app/FrontEnd/my-app
+
+  backend:
+    build:
+      context: ./BackEnd
+      dockerfile: Dockerfile.backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./BackEnd:/app
+
+volumes:
+  frontend-data:
+  backend-data:
