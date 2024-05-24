@@ -2,88 +2,79 @@ pipeline {
     agent any
 
     environment {
-        // Додаємо креденшіали для Docker
+        // Adding credentials for Docker
         DOCKER_CREDENTIALS_ID = 'dockerHub'
         CONTAINER_NAME = 'kuzma343_test23'
-        CONTAINER_NAME2 = 'kuzma343_test23#2'
-         DOCKERFILE_PATH = 'BackEnd/Amazon-clone/Dockerfile'
+        CONTAINER_NAME2 = 'kuzma343_test23_2'
+        DOCKERFILE_PATH = 'BackEnd/Amazon-clone/Dockerfile'
     }
-   
 
     stages {
-        
-        
-       stage('Вхід у Docker') {
+        stage('Docker Login') {
             steps {
                 script {
-                    // Використовуємо креденшіали з Jenkins для входу в Docker
+                    // Using Jenkins credentials to login to Docker
                     withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin'
+                        sh "echo \$DOCKER_PASSWORD | docker login --username \$DOCKER_USERNAME --password-stdin"
                     }
                 }
             }
         }
 
-        stage('Білд Docker зображення і Тегування Docker зображення') {
+        stage('Build Docker Image and Tag Docker Image') {
             steps {
                 script {
-                    // Будуємо Docker зображення
-                    sh 'docker build -t kuzma343/test23:version${BUILD_NUMBER} .'
-                    sh 'docker tag kuzma343/test23:version${BUILD_NUMBER} kuzma343/test23:latest'
-                    sh 'docker build -t kuzma343/test23:version${BUILD_NUMBER} -f $DOCKERFILE_PATH .'
-                    sh 'docker tag kuzma343/test23:version${BUILD_NUMBER} -f $DOCKERFILE_PATH kuzma343/test23:backend'
-                    
+                    // Building Docker image
+                    sh "docker build -t kuzma343/test23:version\$BUILD_NUMBER ."
+                    sh "docker tag kuzma343/test23:version\$BUILD_NUMBER kuzma343/test23:latest"
+                    sh "docker build -t kuzma343/test23:backend\$BUILD_NUMBER -f \$DOCKERFILE_PATH ."
+                    sh "docker tag kuzma343/test23:backend\$BUILD_NUMBER kuzma343/test23:backend"
                 }
             }
         }
 
-        
-
-        stage('Пуш у Docker Hub') {
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    // Пушимо зображення на Docker Hub
-                    sh 'docker push kuzma343/test23:version${BUILD_NUMBER}'
-                     sh 'docker push kuzma343/test23:backend'
-                    sh 'docker push kuzma343/test23:latest'
+                    // Pushing images to Docker Hub
+                    sh "docker push kuzma343/test23:version\$BUILD_NUMBER"
+                    sh "docker push kuzma343/test23:backend"
+                    sh "docker push kuzma343/test23:latest"
                 }
             }
         }
 
-        stage('Зупинка та видалення старого контейнера') {
+        stage('Stop and Remove Old Container') {
             steps {
                 script {
-                    // Спроба зупинити та видалити старий контейнер, якщо він існує
+                    // Attempt to stop and remove the old container if it exists
                     sh """
                     if [ \$(docker ps -aq -f name=^${CONTAINER_NAME}\$) ]; then
                         docker stop ${CONTAINER_NAME}
                         docker rm ${CONTAINER_NAME}
                     else
-                        echo "Контейнер ${CONTAINER_NAME} не знайдено. Продовжуємо..."
+                        echo "Container ${CONTAINER_NAME} not found. Continuing..."
                     fi
                     """
                 }
             }
         }
 
-             stage('Чистка старих образів') {
+        stage('Clean Old Images') {
             steps {
                 script {
-                    // Пушимо зображення на Docker Hub
+                    // Cleaning old images from Docker Hub
                     sh 'docker image prune -a --filter "until=24h" --force'
-
                 }
             }
         }
-        
-        
-        stage('Запуск Docker контейнера') {
+
+        stage('Run Docker Container') {
             steps {
                 script {
-                    // Запускаємо Docker контейнер з новим зображенням
-                    sh 'docker run -d -p 8081:80 --name ${CONTAINER_NAME} --health-cmd="curl --fail http://localhost:80 || exit 1" kuzma343/test23:version${BUILD_NUMBER}'
-                    sh 'docker run -d -p 8082:80 --name ${CONTAINER_NAME2} --health-cmd="curl --fail http://localhost:80 || exit 1" kuzma343/test23:backend${BUILD_NUMBER'
-
+                    // Running Docker container with the new image
+                    sh "docker run -d -p 8081:80 --name ${CONTAINER_NAME} --health-cmd='curl --fail http://localhost:80 || exit 1' kuzma343/test23:version\$BUILD_NUMBER"
+                    sh "docker run -d -p 8082:80 --name ${CONTAINER_NAME2} --health-cmd='curl --fail http://localhost:80 || exit 1' kuzma343/test23:backend\$BUILD_NUMBER"
                 }
             }
         }
