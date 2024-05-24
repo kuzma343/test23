@@ -5,6 +5,7 @@ pipeline {
         // Додаємо креденшіали для Docker
         DOCKER_CREDENTIALS_ID = 'dockerHub'
         CONTAINER_NAME = 'kuzma343_test23'
+        CONTAINER_NAME2 = 'kuzma343_test23#2'
          DOCKERFILE_PATH = 'BackEnd/Amazon-clone/Dockerfile'
     }
    
@@ -81,7 +82,7 @@ pipeline {
                 script {
                     // Запускаємо Docker контейнер з новим зображенням
                     sh 'docker run -d -p 8081:80 --name ${CONTAINER_NAME} --health-cmd="curl --fail http://localhost:80 || exit 1" kuzma343/test23:version${BUILD_NUMBER}'
-                    sh 'docker run -d -p 8081:80 --name ${CONTAINER_NAME} --health-cmd="curl --fail http://localhost:80 || exit 1" kuzma343/test23:version${BUILD_NUMBER}'
+                    sh 'docker run -d -p 8082:80 --name ${CONTAINER_NAME2} --health-cmd="curl --fail http://localhost:80 || exit 1" kuzma343/test23:backend${BUILD_NUMBER'
 
                 }
             }
