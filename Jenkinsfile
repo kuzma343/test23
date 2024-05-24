@@ -5,6 +5,7 @@ pipeline {
         // Додаємо креденшіали для Docker
         DOCKER_CREDENTIALS_ID = 'dockerHub'
         CONTAINER_NAME = 'kuzma343_test23'
+         DOCKERFILE_PATH = 'BackEnd/Amazon-clone/Dockerfile'
     }
    
 
@@ -22,29 +23,27 @@ pipeline {
             }
         }
 
-        stage('Білд Docker зображення') {
+        stage('Білд Docker зображення і Тегування Docker зображення') {
             steps {
                 script {
                     // Будуємо Docker зображення
                     sh 'docker build -t kuzma343/test23:version${BUILD_NUMBER} .'
+                    sh 'docker tag kuzma343/test23:version${BUILD_NUMBER} kuzma343/test23:latest'
+                    sh 'docker build -t kuzma343/test23:version${BUILD_NUMBER} -f $DOCKERFILE_PATH .'
+                    sh 'docker tag kuzma343/test23:version${BUILD_NUMBER} -f $DOCKERFILE_PATH kuzma343/test23:backend'
+                    
                 }
             }
         }
 
-          stage('Тегування Docker зображення') {
-            steps {
-                script {
-                    // Додаємо тег 'latest' до збудованого образу
-                    sh 'docker tag kuzma343/test23:version${BUILD_NUMBER} kuzma343/test23:latest'
-                }
-            }
-        }
+        
 
         stage('Пуш у Docker Hub') {
             steps {
                 script {
                     // Пушимо зображення на Docker Hub
                     sh 'docker push kuzma343/test23:version${BUILD_NUMBER}'
+                     sh 'docker push kuzma343/test23:backend'
                     sh 'docker push kuzma343/test23:latest'
                 }
             }
@@ -81,6 +80,7 @@ pipeline {
             steps {
                 script {
                     // Запускаємо Docker контейнер з новим зображенням
+                    sh 'docker run -d -p 8081:80 --name ${CONTAINER_NAME} --health-cmd="curl --fail http://localhost:80 || exit 1" kuzma343/test23:version${BUILD_NUMBER}'
                     sh 'docker run -d -p 8081:80 --name ${CONTAINER_NAME} --health-cmd="curl --fail http://localhost:80 || exit 1" kuzma343/test23:version${BUILD_NUMBER}'
 
                 }
